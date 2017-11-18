@@ -4,5 +4,6 @@
     "password":"{{ shadowsocks_password.stdout }}",
     "timeout":{{ shadowsocks_timeout }},
     "method":"{{ shadowsocks_encryption_method }}",
-    "fast_open":false
+    "fast_open":false,
+    "workers": 1
 }

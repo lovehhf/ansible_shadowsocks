@@ -78,8 +78,8 @@
 - name: Echo ss info
   debug: msg="{{item}}"
   with_items:
-   - "ansible_public_ipv4 ==> {{ansible_public_ipv4.stdout}}}"
-   - "shadowsocks_server_port ==> {{shadowsocks_server_port}}}"
-   - "shadowsocks_encryption_method ==> {{shadowsocks_encryption_method}}}"
-   - "shadowsocks_password ==> {{shadowsocks_password.stdout}}}"
-   - "ss_link ==> {{ss_link.stdout}}}"
+   - "ansible_public_ipv4 ==> {{ansible_public_ipv4.stdout}}"
+   - "shadowsocks_server_port ==> {{shadowsocks_server_port}}"
+   - "shadowsocks_encryption_method ==> {{shadowsocks_encryption_method}}"
+   - "shadowsocks_password ==> {{shadowsocks_password.stdout}}"
+   - "ss_link ==> {{ss_link.stdout}}"

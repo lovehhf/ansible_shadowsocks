@@ -1,0 +1,20 @@
+--- 
+- name: Write Public ip to file
+  shell: echo {{ ip.stdout }} > /tmp/pub_ip
+  
+- name: Test Get_url Module
+  get_url: url=https://ipinfo.io/ip
+        dest=/tmp/ip2
+
+- name: Test Setup Module
+  shell: echo {{ansible_ens3.ipv4}} > /tmp/tmp
+  
+
+- name: Generate Shadowsocks config file
+  template: src=ssserver.json.j2
+  dest={{ shadowsocks_location }}/config.json
+  
+
+# - name: 
+# - name: Get Os Version
+

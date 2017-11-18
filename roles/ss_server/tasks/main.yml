@@ -1,0 +1,85 @@
+---
+
+- name: Install Shadowsocks dependencies
+  sudo: True
+  apt: pkg={{ item }}
+  with_items: shadowsocks_dependencies
+
+- name: Add the Shadowsocks user
+  sudo: True
+  user: name=shadowsocks
+      home={{ shadowsocks_location }}
+      shell=/usr/sbin/nologin
+      comment="Shadowsocks User"
+        
+- name: Generate a random password if shadowsocks_password not defined
+  sudo: True
+  shell: openssl rand -base64 15 > {{ shadowsocks_password_file }}
+  when: shadowsocks_password==""
+
+- name: Write password to file if shadowsocks_password defined
+  shell: echo {{shadowsocks_password}} > {{ shadowsocks_password_file }}
+  when: shadowsocks_password!=""
+  
+- name: Register Shadowsocks password
+  sudo: True
+  command: cat {{ shadowsocks_password_file }}
+  register: shadowsocks_password
+  
+- name: Install Shadowsocks
+  pip: name=shadowsocks
+  
+- name: Get Public ip
+  command: "curl -s -4 ip.sb"
+  register: ansible_public_ipv4
+
+- name: Generate Shadowsocks config file
+  template: src=ssserver.json.j2
+         dest={{ shadowsocks_location }}/ssserver.json
+         owner=shadowsocks
+         group=shadowsocks
+         mode=640
+  notify: Restart Shadowsocks
+
+- name: Generate Shadowsocks init script
+  template: src=shadowsocks-init.j2
+         dest=/etc/init.d/shadowsocks
+         owner=root
+         group=root
+         mode=755
+
+- name: Register ss link
+  shell: echo -n '{{ shadowsocks_encryption_method }}:{{ shadowsocks_password.stdout }}@{{ ansible_public_ipv4.stdout }}:{{ shadowsocks_server_port }}'|base64 --wrap=0|sed 's#^#ss://#'
+  register: ss_link
+  
+- name: Generate the Shadowsocks QR code
+  # The ss:// URI format is documented here:
+  #   http://shadowsocks.org/en/config/quick-guide.html
+  shell: echo -n {{ ss_link.stdout }}|qrencode -s 15 -o {{ shadowsocks_qr_code }}
+
+- name: Enable the Shadowsocks init script so the service will start at boot
+  command: update-rc.d shadowsocks defaults
+ 
+ 
+- name: Set permissions on the QR code image and Shadowsocks password file
+  file: path={{ item }}
+      owner=shadowsocks
+      group=shadowsocks
+      mode=640
+  with_items:
+    - "{{ shadowsocks_password_file }}"
+    - "{{ shadowsocks_qr_code }}"
+
+- name: Fetch the QR code image
+  fetch: dest=/tmp/
+       src={{ shadowsocks_qr_code }}
+       flat=yes
+
+- name: Echo ss info
+  debug: msg="{{item}}"
+  with_items:
+   - "ansible_public_ipv4 ==> {{ansible_public_ipv4.stdout}}}"
+   - "shadowsocks_server_port ==> {{shadowsocks_server_port}}}"
+   - "shadowsocks_encryption_method ==> {{shadowsocks_encryption_method}}}"
+   - "shadowsocks_password ==> {{shadowsocks_password.stdout}}}"
+   - "ss_link ==> {{ss_link.stdout}}}"
